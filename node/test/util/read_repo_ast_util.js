@@ -1627,5 +1627,28 @@ describe("readRAST", function () {
                                  NodeGit.Stash.FLAGS.INCLUDE_UNTRACKED);
         yield ReadRepoASTUtil.readRAST(repo);
     }));
+
+    it("conflict", co.wrap(function *() {
+        const r = yield TestUtil.createSimpleRepository();
+        const index = yield r.index();
+        const readme = index.getByPath("README.md");
+        yield index.conflictAdd(readme, readme, readme);
+        const ast = yield ReadRepoASTUtil.readRAST(r);
+        const headId = yield r.getHeadCommit();
+        const commit = headId.id().tostrS();
+        let commits = {};
+        commits[commit] = new Commit({
+            changes: { "README.md": ""},
+            message: "first commit",
+        });
+        const expected = new RepoAST({
+            commits: commits,
+            branches: { "master": new RepoAST.Branch(commit, null), },
+            head: commit,
+            currentBranchName: "master",
+        });
+        RepoASTUtil.assertEqualASTs(ast, expected);
+    }));
+
 });
 

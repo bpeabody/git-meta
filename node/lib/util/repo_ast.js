@@ -304,6 +304,7 @@ class AST {
      * @param {Object}      [args.notes]
      * @param {Object}      [args.openSubmodules]
      * @param {Rebase}      [args.Rebase]
+     * @param {[String]}    [args.conflictedFiles]
      */
     constructor(args) {
         if (undefined === args) {
@@ -527,6 +528,16 @@ in commit ${id}.`);
             }
         }
 
+        this.d_conflictedFiles = [];
+        if ("conflictedFiles" in args) {
+            const conflictedFiles = args.conflictedFiles;
+            for (let i = 0; i < conflictedFiles.length; ++i) {
+                const name = conflictedFiles[i];
+                assert.property(this.d_workdir, name);
+                this.d_conflictedFiles.push(name);
+            }
+        }
+
         // Copy and validate open submodules.  Each open submodule must be an
         // instance of `AST` and there must be a `Submodule` defined in the
         // current index for that path.
@@ -641,6 +652,13 @@ in commit ${id}.`);
     }
 
     /**
+     * @property {[String]} conflictedFiles  list of files in conflicted state
+     */
+    get conflictedFiles() {
+        return this.d_conflictedFiles.slice();
+    }
+
+    /**
      * Accumulate the specified `changes` into the specified `dest` map.  A
      * non-null value in `changes` overrides any existing value in `dest`; a
      * `null value causes the path mapped to `null` to be removed.  The
@@ -699,6 +717,9 @@ in commit ${id}.`);
             openSubmodules: ("openSubmodules" in args) ?
                 args.openSubmodules : this.d_openSubmodules,
             rebase: ("rebase" in args) ? args.rebase : this.d_rebase,
+            conflictedFiles: ("conflictedFiles" in args) ?
+                       args.conflictedFiles :
+                       this.d_conflictedFiles,
             bare: ("bare" in args) ? args.bare : this.d_bare,
         });
     }

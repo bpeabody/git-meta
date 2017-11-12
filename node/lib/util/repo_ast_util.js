@@ -471,6 +471,12 @@ ${colorAct(actual.rebase.originalHead)}.`);
 ${colorExp(expected.rebase.onto)} but got ${colorAct(actual.rebase.onto)}.`);
         }
     }
+    if (!deeper(actual.conflictedFiles, expected.conflictedFiles)) {
+        result.push(`\
+Expected conflicted files to be \
+${colorExp(JSON.stringify(expected.conflictedFiles))} but got \
+${colorAct(JSON.stringify(actual.conflictedFiles))}.`);
+    }
 
     return result;
 }

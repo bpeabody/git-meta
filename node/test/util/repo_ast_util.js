@@ -165,6 +165,7 @@ describe("RepoAstUtil", function () {
                     workdir: { foo: "bar" },
                     openSubmodules: { y: anAST },
                     rebase: new Rebase("foo", "1", "1"),
+                    conflictedFiles: [ "foo" ],
                     bare: false,
                 }),
                 expected: new AST({
@@ -178,6 +179,7 @@ describe("RepoAstUtil", function () {
                     workdir: { foo: "bar" },
                     openSubmodules: { y: anAST },
                     rebase: new Rebase("foo", "1", "1"),
+                    conflictedFiles: [ "foo" ],
                     bare: false,
                 }),
             },
@@ -494,6 +496,22 @@ describe("RepoAstUtil", function () {
                     head: "1",
                     branches: { master: new RepoAST.Branch("2", null), },
                     rebase: new Rebase("foo", "1", "1"),
+                }),
+                fails: true,
+            },
+            "wrong conflictedFiles": {
+                actual: new AST({
+                    commits: { "1": aCommit, "2": aCommit},
+                    head: "1",
+                    branches: { master: new RepoAST.Branch("2", null), },
+                    workdir: { foo: "bar", },
+                    conflictedFiles: [ "foo" ],
+                }),
+                expected: new AST({
+                    commits: { "1": aCommit, "2": aCommit},
+                    head: "1",
+                    branches: { master: new RepoAST.Branch("2", null), },
+                    workdir: { foo: "bar", },
                 }),
                 fails: true,
             },

@@ -109,6 +109,15 @@ describe("rebase", function () {
                 rebaser: rebaser("x", "3"),
                 expected: "x=S:C2M-3 2=2;C3-1;Bmaster=2M;Bfoo=3",
             },
+            "conflicted rebase": {
+                initial: `
+a=B:Ca-1 README.md=8;Cb-1 README.md=9;Ba=a;Bb=b|
+x=U:C3-2 s=Sa:a;C4-2 s=Sa:b;Bmaster=3;Bfoo=4`,
+                rebaser: rebaser("x", "4"),
+                expected: `
+x=E:Erefs/heads/master,3,4;H=4;Os Edetached HEAD,a,b`,
+                fails: true,
+            },
             "rebase two commits": {
                 initial: "x=S:C2-1;C3-2;C4-1;Bmaster=3;Bfoo=4;Bx=3",
                 rebaser: rebaser("x", "4"),

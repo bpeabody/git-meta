@@ -194,6 +194,8 @@ describe("RepoAST", function () {
                                                   expected.openSubmodules : {},
                     erebase: ("rebase" in expected) ?
                         expected.rebase : null,
+                    econflictedFiles: ("conflictedFiles" in expected) ?
+                        expected.conflictedFiles : [],
                     fails   : fails,
                 };
             }
@@ -207,6 +209,7 @@ describe("RepoAST", function () {
                         head: null,
                         currentBranchName: null,
                         rebase: null,
+                        conflictedFiles: [],
                         bare: false,
                     },
                     undefined,
@@ -228,6 +231,12 @@ describe("RepoAST", function () {
                     bare: true,
                     rebase: new Rebase("foo", "1", "1"),
                     commits: {"1": c1 },
+                    head: "1",
+                }, undefined, true),
+                "conflicted files": m({
+                    bare: true,
+                    conflictedFiles: ["foo/bar"],
+                    commits: { "1": c1 },
                     head: "1",
                 }, undefined, true),
                 "branchCommit": m({
@@ -510,6 +519,7 @@ describe("RepoAST", function () {
                     assert.deepEqual(obj.workdir, c.eworkdir);
                     assert.deepEqual(obj.openSubmodules, c.eopenSubmodules);
                     assert.deepEqual(obj.rebase, c.erebase);
+                    assert.deepEqual(obj.conflictedFiles, c.econflictedFiles);
                     assert.equal(obj.bare, c.ebare);
 
                     if (c.input) {
@@ -657,6 +667,7 @@ describe("RepoAST", function () {
                 index: { foo: "bar" },
                 workdir: { foo: "bar" },
                 rebase: new Rebase("hello", "1", "1"),
+                conflictedFiles: [ "foo" ],
                 bare: false,
             });
             const newArgs = {
@@ -669,6 +680,7 @@ describe("RepoAST", function () {
                 index: { foo: "bar" },
                 workdir: { foo: "bar" },
                 rebase: new Rebase("hello world", "2", "2"),
+                conflictedFiles: [ "foo" ],
                 bare: false,
             };
             const cases = {
@@ -686,6 +698,7 @@ describe("RepoAST", function () {
                         index: {},
                         workdir: {},
                         rebase: null,
+                        conflictedFiles: [],
                     },
                     e: new RepoAST({
                         commits: { "1": new RepoAST.Commit()},
@@ -711,6 +724,8 @@ describe("RepoAST", function () {
                     assert.deepEqual(obj.workdir, c.e.workdir);
                     assert.deepEqual(obj.openSubmodules, c.e.openSubmodules);
                     assert.deepEqual(obj.rebase, c.e.rebase);
+                    assert.deepEqual(obj.conflictedFiles,
+                                     c.e.conflictedFiles);
                     assert.equal(obj.bare, c.e.bare);
                 });
             });
