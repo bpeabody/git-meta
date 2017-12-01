@@ -21,7 +21,16 @@ performed (perhaps inconveniently) with "plain" Git.  Some related
 requirements:
 
 1. git-meta does not need new meta information unknown to Git to describe the
-   state of a repository.
+   state of a repository.  Caveat: we have had to make a few exceptions to this
+   general plan:
+   1. We record meta stashes using Git commits and reflogs in a way that is
+      inspired by, but differs from, normal Git stashes.  See
+      https://github.com/twosigma/git-meta/issues/251 for more information.
+   1. We record in-progress merges using a different structure than normal Git
+      merges becase running normal Git operations (such as `--continue`) cannot
+      do the right thing in this state and it's invariably the wrong thing to
+      do.
+   1. We do not currently, but will soon, use a similar approach with rebase.
 1. A repository that is in a valid state according to Git is understandable to
    git-meta.
 1. A repository that is in a valid state according to git-meta is in a valid
