@@ -43,24 +43,24 @@ const TYPE = {
  */
 
 /**
- * @class CommitAndBranch
+ * @class CommitAndRef
  *
- * This class describes a commit and optionally the branch it came from.
+ * This class describes a commit and optionally the ref it came from.
  */
-class CommitAndBranch {
+class CommitAndRef {
     /**
-     * Create a new `CommitAndBranch` object.
+     * Create a new `CommitAndRef` object.
      *
      * @param {String}      sha
-     * @param {String|null} branch
+     * @param {String|null} ref
      */
-    constructor(sha, branch) {
+    constructor(sha, ref) {
         assert.isString(sha);
-        if (null !== branch) {
-            assert.isString(branch);
+        if (null !== ref) {
+            assert.isString(ref);
         }
         this.d_sha = sha;
-        this.d_branch = branch;
+        this.d_ref = ref;
 
         Object.freeze(this);
     }
@@ -73,12 +73,12 @@ class CommitAndBranch {
     }
 
     /**
-     * @property {String|null} branch
+     * @property {String|null} ref
      *
-     * If the commit was referenced by a branch, this is its name.
+     * If the commit was referenced by a ref, this is its name.
      */
-    get branch() {
-        return this.d_branch;
+    get ref() {
+        return this.d_ref;
     }
 }
 
@@ -96,8 +96,8 @@ class SequencerState {
     constructor(type, originalHead, target, commits, currentCommit) {
         assert.isString(type);
         assert.property(TYPE, type);
-        assert.instanceOf(originalHead, CommitAndBranch);
-        assert.instanceOf(target, CommitAndBranch);
+        assert.instanceOf(originalHead, CommitAndRef);
+        assert.instanceOf(target, CommitAndRef);
         assert.isArray(commits);
         assert.isNumber(currentCommit);
         assert(0 <= currentCommit);
@@ -120,7 +120,7 @@ class SequencerState {
     }
 
     /**
-     * @property {CommitAndBranch} originalHead
+     * @property {CommitAndRef} originalHead
      * what HEAD pointed to when the operation started
      */
     get originalHead() {
@@ -128,7 +128,7 @@ class SequencerState {
     }
 
     /**
-     * @property {CommitAndBranch} target
+     * @property {CommitAndRef} target
      * the commit that was the target of the operation
      */
     get target() {
@@ -151,6 +151,6 @@ class SequencerState {
 }
 
 SequencerState.TYPE = TYPE;
-SequencerState.CommitAndBranch = CommitAndBranch;
+SequencerState.CommitAndRef = CommitAndRef;
 
 module.exports = SequencerState;

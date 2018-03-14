@@ -37,23 +37,23 @@ const SequencerState = require("../../lib/util/sequencer_state");
 describe("SequencerState", function () {
 
 const TYPE = SequencerState.TYPE;
-const CommitAndBranch = SequencerState.CommitAndBranch;
+const CommitAndRef = SequencerState.CommitAndRef;
 
-    describe("CommitAndBranch", function () {
+    describe("CommitAndRef", function () {
         it("breath", function () {
-            const withBranch = new CommitAndBranch("foo", "bar");
-            assert.isFrozen(withBranch);
-            assert.equal(withBranch.sha, "foo");
-            assert.equal(withBranch.branch, "bar");
+            const withRef = new CommitAndRef("foo", "bar");
+            assert.isFrozen(withRef);
+            assert.equal(withRef.sha, "foo");
+            assert.equal(withRef.ref, "bar");
 
-            const noBranch = new CommitAndBranch("wee", null);
-            assert.equal(noBranch.sha, "wee");
-            assert.isNull(noBranch.branch);
+            const noRef = new CommitAndRef("wee", null);
+            assert.equal(noRef.sha, "wee");
+            assert.isNull(noRef.ref);
         });
     });
     it("breath", function () {
-        const original = new CommitAndBranch("a", "foo");
-        const target = new CommitAndBranch("c", "bar");
+        const original = new CommitAndRef("a", "foo");
+        const target = new CommitAndRef("c", "bar");
         const seq = new SequencerState(TYPE.MERGE, original, target, ["3"], 0);
         assert.isFrozen(seq);
         assert.equal(seq.type, TYPE.MERGE);
