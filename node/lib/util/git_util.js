@@ -973,3 +973,30 @@ exports.getUrlFromRemoteName = co.wrap(function *(repo, remoteName) {
         return yield exports.getRemoteUrl(repo, remote);
     }
 });
+
+/**
+ * Return the sha of the commit that is the merge base of the specified `lhs`
+ * and `rhs` commits in the specified `repo`, or null if there is no base
+ * between these commits.
+ *
+ * TODO: independent test
+ *
+ * @param {NodeGit.Repository} repo
+ * @param {NodeGit.Commit} lhs
+ * @param {NodeGit.Commit} rhs
+ * @return {String|null}
+ */
+exports.getMergeBase = co.wrap(function *(repo, lhs, rhs) {
+    assert.instanceOf(repo, NodeGit.Repository);
+    assert.instanceOf(lhs, NodeGit.Commit);
+    assert.instanceOf(rhs, NodeGit.Commit);
+
+    let baseId;
+    try {
+        baseId = yield NodeGit.Merge.base(repo, lhs.id(), rhs.id());
+    } catch (e) {
+        // only way to detect lack of base
+        return null;
+    }
+    return baseId.tostrS();
+});

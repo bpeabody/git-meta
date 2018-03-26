@@ -198,15 +198,12 @@ const getTreeEntry = co.wrap(function *(tree, path) {
  * @return {NodeGit.Tree|null}
  */
 const getMergeBaseTree = co.wrap(function *(repo, lhs, rhs) {
-    let baseId;
-    try {
-        baseId = yield NodeGit.Merge.base(repo, lhs.id(), rhs.id());
-    } catch (e) {
-        // only way to detect lack of base
-        return null;
+    const baseSha = yield GitUtil.getMergeBase(repo, lhs, rhs);
+    if (null !== baseSha) {
+        const mergeBase = yield repo.getCommit(baseSha);
+        return yield mergeBase.getTree();
     }
-    const mergeBase = yield repo.getCommit(baseId);
-    return yield mergeBase.getTree();
+    return null;
 });
 
 /**
