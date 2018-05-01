@@ -42,10 +42,11 @@ const fs           = require("fs-promise");
 const NodeGit      = require("nodegit");
 const path         = require("path");
 
-const ConfigUtil         = require("./config_util");
-const DoWorkQueue        = require("./do_work_queue");
-const SparseCheckoutUtil = require("./sparse_checkout_util");
-const UserError          = require("./user_error");
+const ConfigUtil          = require("./config_util");
+const DoWorkQueue         = require("./do_work_queue");
+const SparseCheckoutUtil  = require("./sparse_checkout_util");
+const SubmoduleConfigUtil = require("./submodule_config_util");
+const UserError           = require("./user_error");
 
 /**
  * If the directory identified by the specified `dir` contains a ".git"
@@ -1021,21 +1022,18 @@ exports.writeMetaIndex = co.wrap(function *(repo, index) {
     assert.instanceOf(repo, NodeGit.Repository);
     assert.instanceOf(index, NodeGit.Index);
 
-    yield index.write();
     if (yield SparseCheckoutUtil.inSparseMode(repo)) {
-        // If we're in sparse mode, the `index.write()` invocation causes Git
-        // to subsequently see unopened submodules as deleted.  Calling regular
-        // Git checkout clears this up and, I have verified, will not affect
-        // the state of open submodules.
-
-        const execString = `\
-git -C '${repo.workdir()}' checkout .
-`;
-        try {
-            yield ChildProcess.exec(execString);
-        } catch (e) {
-            // Will fail with dir not being empty in some cases, but we don't
-            // care.
+        console.time("setbits");
+        const SKIP_WORKTREE = 1 << 14;
+        const NORMAL = 0;
+        for (const e of index.entries()) {
+            if (NORMAL === NodeGit.Index.entryStage(e) &&
+                SubmoduleConfigUtil.modulesFileName !== index.path) {
+                e.flagsExtended |=  SKIP_WORKTREE;
+                yield index.add(e);
+            }
         }
+        console.timeEnd("setbits");
     }
+    yield index.write();
 });
