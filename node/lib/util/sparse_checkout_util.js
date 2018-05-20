@@ -67,17 +67,7 @@ exports.getSparseCheckoutPath = function (repo) {
 exports.inSparseMode = co.wrap(function *(repo) {
     assert.instanceOf(repo, NodeGit.Repository);
 
-    if (!(yield ConfigUtil.configIsTrue(repo, "core.sparsecheckout"))) {
-        return false;
-    }
-    let content;
-    try {
-        content = yield fs.readFile(exports.getSparseCheckoutPath(repo),
-                                    "utf8");
-    } catch (e) {
-        return false;                                                 // RETURN
-    }
-    return content === ".gitmodules\n";
+    return yield ConfigUtil.configIsTrue(repo, "core.sparsecheckout");
 });
 
 /**
@@ -94,3 +84,29 @@ exports.setSparseMode = co.wrap(function *(repo) {
     yield config.setString("core.sparsecheckout", "true");
     yield fs.writeFile(exports.getSparseCheckoutPath(repo), ".gitmodules\n");
 });
+
+/**
+ * This bit is set in the `flagsExtended` field of a `NodeGit.Index.Entry` for
+ * paths that should be skipped due to sparse checkout.
+ */
+exports.SKIP_WORKTREE = 1 << 14;
+
+/**
+ * Return the contents of the `.git/info/sparse-checkout` file for the
+ * specified `repo`.
+ *
+ * @param {NodeGit.Repository} repo
+ * @return {String}
+ */
+exports.readSparseCheckout = function (repo) {
+    assert.instanceOf(repo, NodeGit.Repository);
+    const filePath = exports.getSparseCheckoutPath(repo);
+    try {
+        return fs.readFileSync(filePath, "utf8");
+    } catch (e) {
+        if ("ENOENT" !== e.code) {
+            throw e;
+        }
+        return "";
+    }
+};
