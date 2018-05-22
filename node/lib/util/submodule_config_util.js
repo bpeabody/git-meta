@@ -689,3 +689,79 @@ exports.writeUrls = co.wrap(function *(repo, index, urls, cached) {
         }
     }
 });
+
+/**
+ * Return the result of merging the specified `left` and `right` URLs having in
+ * common the specified `base` URLs or null if there are conflicts.
+ *
+ * We use a conservative approach here -- if the merge bases for left and right
+ * are not all in agreement 
+ *
+ * @param {Object} left
+ * @param {Object} right
+ * @param {Object[]} bases
+ * @return {Object|null}
+ */
+exports.mergeUrls = function (left, right, bases) {
+    assert.isObject(left);
+    assert.isObject(right);
+    assert.isArray(bases);
+
+    // If no bases are provided, act as if we have a single base with no URLs.
+
+    bases = 0 === bases.length ? [{}] : bases;
+
+    // If a value is changed in any base, consider it changed.
+
+    function isChanged(name, value) {
+        return bases.find(urls => urls[name] !== value) !== undefined;
+    }
+    const result = {};
+
+    // First we fully resolve all the URLS that exist in `left`.
+
+    for (const name of Object.keys(left)) {
+        const leftValue = left[name];
+        const rightValue = right[name];
+
+        if (isChanged(name, leftValue)) {
+            // If the value is changed on the left, we're going to use that
+            // value, though if it's also changed to a different value on the
+            // right we've got a conflict.
+
+            if (isChanged(name, rightValue) && leftValue !== rightValue) {
+                return null;
+            }
+            result[name] = leftValue;
+        } else if (undefined !== rightValue) {
+            // Otherwise, if it's not changed on the left, use the value from
+            // the right.
+
+            result[name] = rightValue;
+        }
+    }
+
+    // Now, we handle everything from the right for URLs missing on the left.
+
+    for (const name of Object.keys(right)) {
+        // If it's in the result object, we've already processed it.
+
+        if (name in result) {
+            continue;                                               // CONTINUE
+        }
+        const rightValue = right[name];
+        if (isChanged(name, undefined)) {
+            if (isChanged(name, rightValue)) {
+                // If it's changed on both sides -- removed on the left and
+                // updated on the right -- we've got a conflict.
+
+                return null;
+            }
+        } else {
+            // Otherwise, we use the value from the right, changed or not.
+
+            result[name] = rightValue;
+        }
+    }
+    return result;
+};

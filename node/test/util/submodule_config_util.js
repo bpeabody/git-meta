@@ -827,5 +827,116 @@ foo
             foo: "/bar"
         });
     }));
+    describe("mergeUrls", function () {
+        const cases = {
+            "empty": {
+                l: {},
+                r: {},
+                bases: [],
+                expected: {},
+            },
+            "changed but same": {
+                l: {},
+                r: {},
+                bases: [ {
+                    foo: "bar",
+                }],
+                expected: {},
+            },
+            "changed but same, not deleted": {
+                l: { foo: "baz" },
+                r: { foo: "baz" },
+                bases: [ {
+                    foo: "bar",
+                }],
+                expected: {
+                    foo: "baz",
+                },
+            },
+            "changed on left but not right": {
+                l: { foo: "baz" },
+                r: { foo: "bar" },
+                bases: [ {
+                    foo: "bar",
+                }],
+                expected: {
+                    foo: "baz",
+                },
+            },
+            "changed on both": {
+                l: { foo: "meh" },
+                r: { foo: "moh" },
+                bases: [{
+                    foo: "bar",
+                },
+                ],
+                expected: null,
+            },
+            "changed on both, but same in a base": {
+                l: { foo: "meh" },
+                r: { foo: "moh" },
+                bases: [{
+                    foo: "bar",
+                }, {
+                    foo: "meh",
+                },
+                ],
+                expected: null,
+            },
+            "changed on right": {
+                l: { foo: "bar" },
+                r: { foo: "bam" },
+                bases: [ {
+                    foo: "bar",
+                }],
+                expected: {
+                    foo: "bam",
+                },
+            },
+            "removed on left, unchanged on right": {
+                l: {},
+                r: { foo: "bar" },
+                bases: [ {
+                    foo: "bar",
+                }],
+                expected: {},
+            },
+            "removed on left, changed on right": {
+                l: {},
+                r: { foo: "baz" },
+                bases: [ {
+                    foo: "bar",
+                }],
+                expected: null,
+            },
+            "added on left": {
+                l: { foo: "bar" },
+                r: {},
+                bases: [],
+                expected: { foo: "bar" },
+            },
+            "added on left, with a base": {
+                l: { foo: "bar" },
+                r: {},
+                bases: [{}],
+                expected: { foo: "bar" },
+            },
+            "added on right": {
+                l: {},
+                r: { foo: "bar" },
+                bases: [{}],
+                expected: { foo: "bar" },
+            },
+        };
+        Object.keys(cases).forEach(caseName => {
+            const c = cases[caseName];
+            it(caseName, function () {
+                const result = SubmoduleConfigUtil.mergeUrls(c.l,
+                                                             c.r,
+                                                             c.bases);
+                assert.deepEqual(result, c.expected);
+            });
+        });
+    });
 });
 
