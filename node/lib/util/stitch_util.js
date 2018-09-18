@@ -410,6 +410,45 @@ exports.computeModulesFile = co.wrap(function *(repo,
 });
 
 /**
+ * Return a map of the submodule changes for the specified `commits` in the
+ * specified `repo`.
+ *
+ * @param {[NodeGit.Commit]} commits
+ * @return {Object}     sha -> name -> SubmoduleChange
+ */
+exports.listSubmoduleChanges = co.wrap(function *(repo, commits) {
+    assert.instanceOf(repo, NodeGit.Repository);
+    assert.isArray(commits);
+
+    const result = {};
+
+    let numListed = 0;
+
+    // This bit is pretty slow, but we run it on only unconverted commits.  If
+    // necessary, we could cache the submodule changes in a note.
+
+    const listChanges = co.wrap(function *(commit) {
+        const parents = yield commit.getParents();
+        let parentCommit = null;
+        if (0 !== parents.length) {
+            parentCommit = parents[0];
+        }
+        const changes = yield SubmoduleUtil.getSubmoduleChanges(repo,
+                                                                commit,
+                                                                parentCommit,
+                                                                true);
+        result[commit.id().tostrS()] = changes;
+        ++numListed;
+        if (0 === numListed % 100) {
+            console.log("Listed", numListed, "of", commits.length);
+        }
+    });
+
+    yield DoWorkQueue.doInParallel(commits, listChanges, maxParallel);
+    return result;
+});
+
+/**
  * Return a map from submodule name to shas to list of objects containing the
  * fields:
  * - `metaSha` -- the meta-repo sha from which this subodule sha came
@@ -424,6 +463,7 @@ exports.computeModulesFile = co.wrap(function *(repo,
  *
  * @param {NodeGit.Repository}      repo
  * @param {[NodeGit.Commit]}        toFetch
+ * @param {Object}                  commitChanges    sha->name->SubmoduleChange
  * @param {(String) => Boolean}     keepAsSubmodule
  * @param {(String) => String|null} adjustPath
  * @param {Number}                  numParallel
@@ -431,11 +471,13 @@ exports.computeModulesFile = co.wrap(function *(repo,
  */
 exports.listFetches = co.wrap(function *(repo,
                                          toFetch,
+                                         commitChanges,
                                          keepAsSubmodule,
                                          adjustPath,
                                          numParallel) {
     assert.instanceOf(repo, NodeGit.Repository);
     assert.isArray(toFetch);
+    assert.isObject(commitChanges);
     assert.isFunction(keepAsSubmodule);
     assert.isFunction(adjustPath);
     assert.isNumber(numParallel);
@@ -460,32 +502,6 @@ exports.listFetches = co.wrap(function *(repo,
     });
 
     const result = {};
-
-    const commitChanges = {};
-
-    let numListed = 0;
-
-    // This bit is pretty slow, but we run it on only unconverted commits.  If
-    // necessary, we could cache the submodule changes in a note.
-
-    const listChanges = co.wrap(function *(commit) {
-        const parents = yield commit.getParents();
-        let parentCommit = null;
-        if (0 !== parents.length) {
-            parentCommit = parents[0];
-        }
-        const changes = yield SubmoduleUtil.getSubmoduleChanges(repo,
-                                                                commit,
-                                                                parentCommit,
-                                                                true);
-        commitChanges[commit.id().tostrS()] = changes;
-        ++numListed;
-        if (0 === numListed % 100) {
-            console.log("Listed", numListed, "of", toFetch.length);
-        }
-    });
-
-    yield DoWorkQueue.doInParallel(toFetch, listChanges, maxParallel);
 
     const addTodo = co.wrap(function *(commit, subName, sha) {
         let subTodos = result[subName];
@@ -546,6 +562,7 @@ exports.listFetches = co.wrap(function *(repo,
  *
  * @param {NodeGit.Repository}      repo
  * @param {NodeGit.Commit}          commit
+ * @param {Object}                  subChanges   path to SubmoduleChange
  * @param {[NodeGit.Commit]}        parents
  * @param {(String) => Boolean}     keepAsSubmodule
  * @param {(String) => String|null} adjustPath
@@ -554,12 +571,14 @@ exports.listFetches = co.wrap(function *(repo,
  */
 exports.writeStitchedCommit = co.wrap(function *(repo,
                                                  commit,
+                                                 subChanges,
                                                  parents,
                                                  keepAsSubmodule,
                                                  adjustPath,
                                                  skipEmpty) {
     assert.instanceOf(repo, NodeGit.Repository);
     assert.instanceOf(commit, NodeGit.Commit);
+    assert.isObject(subChanges);
     assert.isArray(parents);
     assert.isFunction(keepAsSubmodule);
     assert.isFunction(adjustPath);
@@ -576,10 +595,6 @@ exports.writeStitchedCommit = co.wrap(function *(repo,
     if (0 !== originalParents.length) {
         originalParent = originalParents[0];
     }
-    const subChanges = yield SubmoduleUtil.getSubmoduleChanges(repo,
-                                                               commit,
-                                                               originalParent,
-                                                               true);
 
     // changes and additions
 
@@ -825,6 +840,8 @@ exports.stitch = co.wrap(function *(repoPath,
     const commitsToStitch =
              yield exports.listCommitsToStitch(repo, commit, convertedCommits);
 
+    const changes = yield exports.listSubmoduleChanges(repo, commitsToStitch);
+
     const adjustPath = exports.makeAdjustPathFunction(joinRoot);
 
     console.log(commitsToStitch.length, "to stitch");
@@ -833,6 +850,7 @@ exports.stitch = co.wrap(function *(repoPath,
         console.log("listing fetches");
         const fetches = yield exports.listFetches(repo,
                                                   commitsToStitch,
+                                                  changes,
                                                   options.keepAsSubmodule,
                                                   adjustPath,
                                                   options.numParallel);
@@ -870,6 +888,7 @@ ${name}`;
         const newCommit = yield exports.writeStitchedCommit(
                                                        repo,
                                                        next,
+                                                       changes[nextSha],
                                                        newParents,
                                                        options.keepAsSubmodule,
                                                        adjustPath,
